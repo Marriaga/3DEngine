@@ -6,6 +6,7 @@ from Tkinter import *
 from PIL import Image, ImageTk
 import math
 import colorsys
+import time
 
 #----------------------------------------------------------------------
 
@@ -421,6 +422,7 @@ class MainWindow():
         # Button to start/stop animation
         self.button = Button(Root, text="Start", command=self.onButton)
         self.button.grid(row=0, column=0)
+        self.Rendcount=0
 
     #----------------
 
@@ -434,6 +436,11 @@ class MainWindow():
             self.active=False
         
     def RedoPic(self):
+        if self.Rendcount==0:
+            self.tic=time.time()
+        elif self.Rendcount==20:
+            tm=time.time()-self.tic
+            print 'Elapsed time is '+str(tm)
         Transform=self.Rend.Transforms[0]  #Get first Transformation Set (TS)
         Atranfs=Transform.TransformList[0] #Get first transformation (rotation)
         Atranfs.Modify(ang=Atranfs.ang+10) #Change the angle of rotation
@@ -448,6 +455,7 @@ class MainWindow():
         #Resize, Save and put image on canvas
         self.image = ImageTk.PhotoImage(self.Rend.Img.resize(self.wh))
         self.canvas.itemconfig(self.image_on_canvas, image = self.image)
+        self.Rendcount+=1
         
         #Keep changing the angle until process is stopped
         if self.active:

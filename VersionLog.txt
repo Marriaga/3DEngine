@@ -1,0 +1,2 @@
+Initial Version - First 20 Renders in 400x300->800x600: 10.6
+Second Version (better baricenter)- First 20 Renders in 400x300->800x600: 7.6

@@ -461,69 +461,70 @@ class MainWindow():
 
 #----------------------------------------------------------------------
 #----------------------------------------------------------------------
-
+def main():
 ## SET-UP
+    
+    #Create 4 points: Point(x,y,z,(R,G,B))
+    p1=Point(-2,-2, 4,(0,255,255))
+    p2=Point( 4, 0.1, 4,(255,255,0))
+    p3=Point( 0.1, 4, 4,(255,0,0))
+    p4=Point( -0.1, -0.1, 0,(100,100,100))
+    #Create a Tetrahedron 
+    TH1=Tetra(p1,p2,p3,p4)
+    
+    #Create a Transformation Set
+    TS1=Transform()
+    #Add several transformations to the set
+    TS1.AddTransf(Rotation(130,3))
+    TS1.AddTransf(Translation(2,2))
+    TS1.AddTransf(Translation(1,3))
+    TS1.AddTransf(Translation(1,1))
+    #Create a new Tetrahedron by applying the
+    #transformation set to the first tetrahedron
+    TH2=TH1.ApplyTransf(TS1)
+    
+    #Create Camera (very basic for now)
+    cam=Camera()
+    
+    #Create a new transformation set and
+    #add Rotation tranformations to the set
+    #(These will be the transformations changed 
+    # in the GUI to make the objects rotate)
+    TS2=Transform()
+    TS2.AddTransf(Rotation(0,3))
+    TS2.AddTransf(Rotation(0,2))
+    
+    #Create First Light Source
+    L1O=Point(5,0,2) #Point of origin (not used for now)
+    L1D=Vec(Point(-1,0,0)) #Direction
+    L1=Light(L1O,L1D,0.5) #Create Light object
+    
+    #Create Second Light Source
+    L2O=Point(0,-3,0)
+    L2D=Vec(Point(0,1,2))
+    L2=Light(L2O,L2D,0.3)
+    
+    #Create Renderer Object: Renderer(Camera,Resolution)
+    rend=Renderer(cam,Res=(400,300))
+    #Add the Tetrahedra to the Renderer
+    rend.AddObject(TH1)
+    rend.AddObject(TH2)
+    #Add the transformation (rotaiton)
+    rend.AddTransf(TS2)
+    #Add the lights
+    rend.AddLightLum(L1)
+    rend.AddLightLum(L2)
+    
+    #----------------------------------------------------------------------
+    
+    #Tkinter
+    
+    root = Tk()
+    #root = Toplevel()
+    MainWindow(root,rend)
+    root.mainloop()
 
-#Create 4 points: Point(x,y,z,(R,G,B))
-p1=Point(-2,-2, 4,(0,255,255))
-p2=Point( 4, 0.1, 4,(255,255,0))
-p3=Point( 0.1, 4, 4,(255,0,0))
-p4=Point( -0.1, -0.1, 0,(100,100,100))
-#Create a Tetrahedron 
-TH1=Tetra(p1,p2,p3,p4)
 
-#Create a Transformation Set
-TS1=Transform()
-#Add several transformations to the set
-TS1.AddTransf(Rotation(130,3))
-TS1.AddTransf(Translation(2,2))
-TS1.AddTransf(Translation(1,3))
-TS1.AddTransf(Translation(1,1))
-#Create a new Tetrahedron by applying the
-#transformation set to the first tetrahedron
-TH2=TH1.ApplyTransf(TS1)
-
-#Create Camera (very basic for now)
-cam=Camera()
-
-#Create a new transformation set and
-#add Rotation tranformations to the set
-#(These will be the transformations changed 
-# in the GUI to make the objects rotate)
-TS2=Transform()
-TS2.AddTransf(Rotation(0,3))
-TS2.AddTransf(Rotation(0,2))
-
-#Create First Light Source
-L1O=Point(5,0,2) #Point of origin (not used for now)
-L1D=Vec(Point(-1,0,0)) #Direction
-L1=Light(L1O,L1D,0.5) #Create Light object
-
-#Create Second Light Source
-L2O=Point(0,-3,0)
-L2D=Vec(Point(0,1,2))
-L2=Light(L2O,L2D,0.3)
-
-#Create Renderer Object: Renderer(Camera,Resolution)
-rend=Renderer(cam,Res=(400,300))
-#Add the Tetrahedra to the Renderer
-rend.AddObject(TH1)
-rend.AddObject(TH2)
-#Add the transformation (rotaiton)
-rend.AddTransf(TS2)
-#Add the lights
-rend.AddLightLum(L1)
-rend.AddLightLum(L2)
-
-#----------------------------------------------------------------------
-
-#Tkinter
-
-root = Tk()
-#root = Toplevel()
-MainWindow(root,rend)
-root.mainloop()
-
-
-
+if __name__ == "__main__":
+    main()
 

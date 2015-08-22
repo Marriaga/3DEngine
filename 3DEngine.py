@@ -233,7 +233,7 @@ class Triangle:
             return True
         return False
         
-    def draw(self,Cam,Res):
+    def draw(self,Cam,Res,Zmap,pixels):
         p1,p2,p3=self.Ps
         #Resolution
         Nx,Ny=Res
@@ -268,8 +268,11 @@ class Triangle:
                 isin=self.TestIn(a,b,c)
                 if isin:
                     z=self.getz(a,b,c)
-                    col=self.getcol(a,b,c)
-                    pixs.append((ix,iy,z,col))
+                    if Zmap[ix,iy]>=z:
+                        Zmap[ix,iy]=z
+                        col=self.getcol(a,b,c)
+                        pixels[ix,iy]=col
+
                 a+=self.BCts.A12*dx
                 b+=self.BCts.A20*dx
                 c+=self.BCts.A01*dx
@@ -307,12 +310,10 @@ class Tetra:
                 return True
         return False
     
-    def draw(self,Cam,Res):
-        pixs=[]
+    def draw(self,Cam,Res,Zmap,pixels):
         for t in self.Ts:
             if t.InView(Cam):
-                pixs.extend(t.draw(Cam,Res))
-        return pixs
+                t.draw(Cam,Res,Zmap,pixels)
 
 #----------------------------------------------------------------------
 
@@ -381,12 +382,8 @@ class Renderer:
         
         for obj in self.ObjectsT:
             if obj.InView(self.Cam):
-                
-                pixs=obj.draw(self.Cam,self.Res)
-                for ix,iy,z,col in pixs:
-                    if Zmap[ix,iy]>=z:
-                        Zmap[ix,iy]=z
-                        pixels[ix,iy]=col
+                obj.draw(self.Cam,self.Res, Zmap,pixels)
+
         
         #self.Img.show()  #Old viewing
 
@@ -441,6 +438,7 @@ class MainWindow():
         elif self.Rendcount==20:
             tm=time.time()-self.tic
             print 'Elapsed time is '+str(tm)
+            
         Transform=self.Rend.Transforms[0]  #Get first Transformation Set (TS)
         Atranfs=Transform.TransformList[0] #Get first transformation (rotation)
         Atranfs.Modify(ang=Atranfs.ang+10) #Change the angle of rotation

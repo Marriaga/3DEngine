@@ -179,12 +179,13 @@ class Triangle:
     def getArea(self):
         p1,p2,p3=self.Ps
         Area=0.5*(self.BCts.B01*self.BCts.A20-self.BCts.B20*self.BCts.A01)
-        self.BCts.A01=self.BCts.A01/(2*Area)
-        self.BCts.B01=self.BCts.B01/(2*Area)
-        self.BCts.A12=self.BCts.A12/(2*Area)
-        self.BCts.B12=self.BCts.B12/(2*Area)
-        self.BCts.A20=self.BCts.A20/(2*Area)
-        self.BCts.B20=self.BCts.B20/(2*Area)
+        if not Area==0:
+            self.BCts.A01=self.BCts.A01/(2*Area)
+            self.BCts.B01=self.BCts.B01/(2*Area)
+            self.BCts.A12=self.BCts.A12/(2*Area)
+            self.BCts.B12=self.BCts.B12/(2*Area)
+            self.BCts.A20=self.BCts.A20/(2*Area)
+            self.BCts.B20=self.BCts.B20/(2*Area)
         return Area
 
     def getn(self):

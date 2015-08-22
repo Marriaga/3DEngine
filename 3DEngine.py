@@ -153,18 +153,39 @@ class Vec:
         n=np.array((self.x,self.y,self.z))
         return n/np.sqrt(np.dot(n,n))
 
+class BariConsts():
+    def __init__(self,Ps):
+        p1,p2,p3=Ps
+        self.A01 = p1.y - p2.y
+        self.B01 = p2.x - p1.x
+        
+        self.A12 = p2.y - p3.y
+        self.B12 = p3.x - p2.x
+        
+        self.A20 = p3.y - p1.y
+        self.B20 = p1.x - p3.x   
+    
+
 class Triangle:
     def __init__(self,P1,P2,P3,Surf=None):
         self.Ps=P1,P2,P3
         self.Surf=Surf
+        self.BCts=BariConsts(self.Ps)
         self.Area=self.getArea()
         self.n=self.getn()
-        self.lum=0.1
-
+        self.lum=0.1  
+    
     def getArea(self):
         p1,p2,p3=self.Ps
-        return 0.5*((p2.x-p1.x)*(p3.y-p1.y)-(p3.x-p1.x)*(p2.y-p1.y))
-        
+        Area=0.5*(self.BCts.B01*self.BCts.A20-self.BCts.B20*self.BCts.A01)
+        self.BCts.A01=self.BCts.A01/(2*Area)
+        self.BCts.B01=self.BCts.B01/(2*Area)
+        self.BCts.A12=self.BCts.A12/(2*Area)
+        self.BCts.B12=self.BCts.B12/(2*Area)
+        self.BCts.A20=self.BCts.A20/(2*Area)
+        self.BCts.B20=self.BCts.B20/(2*Area)
+        return Area
+
     def getn(self):
         p1,p2,p3=self.Ps
         V=Vec(p1,p2)
@@ -189,32 +210,27 @@ class Triangle:
         
     def getBari(self,px,py):
         p1,p2,p3=self.Ps
-        den=(p2.y - p3.y)*(p1.x - p3.x) + (p3.x - p2.x)*(p1.y - p3.y)
-        if den==0.0:
-            return (0,0,0),False
-        a = ((p2.y - p3.y)*(px - p3.x) + (p3.x - p2.x)*(py - p3.y)) /den
-        b =  ((p3.y - p1.y)*(px - p3.x) + (p1.x - p3.x)*(py - p3.y)) /den 
+        a =  self.BCts.A12*(px - p3.x) + self.BCts.B12*(py - p3.y)
+        b =  self.BCts.A20*(px - p3.x) + self.BCts.B20*(py - p3.y)
         c = 1.0 - a - b
-        if a>=0 and a<=1 and b>=0 and b<=1 and c>=0 and c<=1:
-            isin= True
-        else:
-            isin= False
-        return (a,b,c),isin        
+        return a,b,c       
         
-    def getz(self,Bari):
+    def getz(self,a,b,c):
         p1,p2,p3=self.Ps
-        a,b,c=Bari
         return a*p1.z+b*p2.z+c*p3.z
     
-    def getcol(self,Bari):
+    def getcol(self,a,b,c):
         p1,p2,p3=self.Ps
-        a,b,c=Bari
         colnode = tuple(int(a*co1+b*co2+c*co3) for co1,co2,co3 in zip(p1.c,p2.c,p3.c))
         r, g, b = [x/255.0 for x in colnode]
         h, l, s = colorsys.rgb_to_hls(r, g, b)
         l=self.lum
         return tuple(int(x*255.0) for x in colorsys.hls_to_rgb(h, l, s))             
-                    
+               
+    def TestIn(self,a,b,c):
+        if a>=0 and b>=0 and c>=0:
+            return True
+        return False
         
     def draw(self,Cam,Res):
         p1,p2,p3=self.Ps
@@ -239,17 +255,26 @@ class Triangle:
         Nymin=Ny-1-Nymaxt     
         Nymax=Ny-1-Nymint        
         
+        #Bottom Lower Corner
+        XX=Cam.xmin+dx/2+Nxmin*dx
+        YY=Cam.ymin+dy/2+(Ny-1-Nymin)*dy
+        a0,b0,c0=self.getBari(XX,YY)
         
         pixs=[]
-        for ix in range(Nxmin,Nxmax+1):
-            for iy in range(Nymin,Nymax-1):
-                XX=Cam.xmin+dx/2+ix*dx
-                YY=Cam.ymin+dy/2+(Ny-1-iy)*dy
-                Bari,isin=self.getBari(XX,YY)
+        for iy in range(Nymin,Nymax-1):
+            a,b,c=a0,b0,c0
+            for ix in range(Nxmin,Nxmax+1):
+                isin=self.TestIn(a,b,c)
                 if isin:
-                    z=self.getz(Bari)
-                    col=self.getcol(Bari)
-                    pixs.append((ix,iy,z,col))                
+                    z=self.getz(a,b,c)
+                    col=self.getcol(a,b,c)
+                    pixs.append((ix,iy,z,col))
+                a+=self.BCts.A12*dx
+                b+=self.BCts.A20*dx
+                c+=self.BCts.A01*dx
+            a0-=self.BCts.B12*dy
+            b0-=self.BCts.B20*dy
+            c0-=self.BCts.B01*dy
         return pixs
 
     def ApplyTransf(self,Trsf):
@@ -319,8 +344,6 @@ class Camera:
         
 class Renderer:
     def __init__(self,Cam,Res=(800,600)):
-        if Cam==[]:
-            print("ERROR: Cam cannont be empty in Renderer")
         self.Cam=Cam
         self.Res=Res
         self.Objects=[]
@@ -353,15 +376,17 @@ class Renderer:
         self.Img=Image.new('RGB', self.Res,"white")
         pixels = self.Img.load() # create the pixel map
         Zmap=np.zeros(self.Img.size)
-        Zmap[:,:]=self.Cam.zmax        
+        Zmap[:,:]=self.Cam.zmax
         
         for obj in self.ObjectsT:
             if obj.InView(self.Cam):
+                
                 pixs=obj.draw(self.Cam,self.Res)
                 for ix,iy,z,col in pixs:
                     if Zmap[ix,iy]>=z:
                         Zmap[ix,iy]=z
                         pixels[ix,iy]=col
+        
         #self.Img.show()  #Old viewing
 
 

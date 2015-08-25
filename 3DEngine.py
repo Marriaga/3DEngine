@@ -1,7 +1,6 @@
 #!/usr/bin/python
 from __future__ import division
 import numpy as np
-#import scipy as sp
 from Tkinter import *
 from PIL import Image, ImageTk
 import math
@@ -9,6 +8,16 @@ import colorsys
 import time
 
 #----------------------------------------------------------------------
+def randcol():
+    R=int(np.random.rand()*255)
+    G=int(np.random.rand()*255)
+    B=int(np.random.rand()*255)
+    return (R,G,B)
+
+def RGB2INT(rgb):
+   R,G,B=rgb
+   return R*256^2 + G*256 + B
+    
 
 class Rotation:
     def __init__(self,ang,dim):
@@ -174,7 +183,7 @@ class Triangle:
         self.BCts=BariConsts(self.Ps)
         self.Area=self.getArea()
         self.n=self.getn()
-        self.lum=0.1  
+        self.lum=0.1
     
     def getArea(self):
         p1,p2,p3=self.Ps
@@ -222,17 +231,27 @@ class Triangle:
         return a*p1.z+b*p2.z+c*p3.z
     
     def getcol(self,a,b,c):
-        p1,p2,p3=self.Ps
-        colnode = tuple(int(a*co1+b*co2+c*co3) for co1,co2,co3 in zip(p1.c,p2.c,p3.c))
-        r, g, b = [x/255.0 for x in colnode]
-        h, l, s = colorsys.rgb_to_hls(r, g, b)
-        l=self.lum
-        return tuple(int(x*255.0) for x in colorsys.hls_to_rgb(h, l, s))             
+        if self.Surf:
+            return self.Surf
+        else:
+            p1,p2,p3=self.Ps
+            r1,g1,b1=p1.c
+            r2,g2,b2=p2.c
+            r3,g3,b3=p3.c
+            R=(a*r1+b*r2+c*r3)/255
+            G=(a*g1+b*g2+c*g3)/255
+            B=(a*b1+b*b2+c*b3)/255
+            h, l, s = colorsys.rgb_to_hls(R,G,B)
+            l=self.lum
+            return tuple(int(x*255.0) for x in colorsys.hls_to_rgb(h, l, s))             
                
     def TestIn(self,a,b,c):
         if a>=0 and b>=0 and c>=0:
             return True
         return False
+    
+    #def draw2(self,Cam,Res,Zmap,pixels):
+    #    RT.DrawTriangle(self,Cam,Res,Zmap,pixels)
         
     def draw(self,Cam,Res,Zmap,pixels):
         p1,p2,p3=self.Ps
@@ -262,7 +281,6 @@ class Triangle:
         YY=Cam.ymin+dy/2+(Ny-1-Nymin)*dy
         a0,b0,c0=self.getBari(XX,YY)
         
-        pixs=[]
         for iy in range(Nymin,Nymax-1):
             a,b,c=a0,b0,c0
             for ix in range(Nxmin,Nxmax+1):
@@ -271,7 +289,7 @@ class Triangle:
                     z=self.getz(a,b,c)
                     if Zmap[ix,iy]>=z:
                         Zmap[ix,iy]=z
-                        col=self.getcol(a,b,c)
+                        col=RGB2INT(self.getcol(a,b,c))
                         pixels[ix,iy]=col
 
                 a+=self.BCts.A12*dx
@@ -280,7 +298,6 @@ class Triangle:
             a0-=self.BCts.B12*dy
             b0-=self.BCts.B20*dy
             c0-=self.BCts.B01*dy
-        return pixs
 
     def ApplyTransf(self,Trsf):
         p1,p2,p3=tuple(p.ApplyTransf(Trsf) for p in self.Ps)
@@ -288,13 +305,24 @@ class Triangle:
         
 class Tetra:
     def __init__(self,P1,P2,P3,P4,Surf=None):
-        self.Ps=(P1,P2,P3,P4)
-        T1=Triangle(P1,P2,P4,Surf)
-        T2=Triangle(P2,P3,P4,Surf)
-        T3=Triangle(P3,P1,P4,Surf)
-        T4=Triangle(P1,P3,P2,Surf)
-        self.Ts=(T1,T2,T3,T4)
+        self.Ps=(P1,P2,P3,P4)        
         self.Surf=Surf
+        if not Surf:
+            S1=Surf
+            S2=Surf
+            S3=Surf
+            S4=Surf
+        else:
+            S1=Surf[0]
+            S2=Surf[1]
+            S3=Surf[2]
+            S4=Surf[3]
+
+        T1=Triangle(P1,P2,P4,S1)
+        T2=Triangle(P2,P3,P4,S2)
+        T3=Triangle(P3,P1,P4,S3)
+        T4=Triangle(P1,P3,P2,S4)
+        self.Ts=(T1,T2,T3,T4)
         
     def ApplyTransf(self,Trsf):
         P1,P2,P3,P4=tuple(t.ApplyTransf(Trsf) for t in self.Ps)
@@ -353,7 +381,7 @@ class Renderer:
         self.ObjectsT=[]
         self.Transforms=[]
         self.Lights=[]
-        self.Img=Image.new('RGB', Res,"white") # create a new blank image
+        self.Img=Image.new('I', Res,"red") # create a new blank image
     
     def AddObject(self,obj):
         self.Objects.append(obj)
@@ -376,7 +404,7 @@ class Renderer:
                 obj.AddLightLum(light)        
         
     def Render(self):
-        self.Img=Image.new('RGB', self.Res,"white")
+        self.Img=Image.new('I', self.Res,"blue")
         pixels = self.Img.load() # create the pixel map
         Zmap=np.zeros(self.Img.size)
         Zmap[:,:]=self.Cam.zmax
@@ -385,8 +413,8 @@ class Renderer:
             if obj.InView(self.Cam):
                 obj.draw(self.Cam,self.Res, Zmap,pixels)
 
-        
-        #self.Img.show()  #Old viewing
+    def ShowImg(self):
+        self.Img.show()
 
 
 #----------------------------------------------------------------------
@@ -455,13 +483,15 @@ class MainWindow():
         self.image = ImageTk.PhotoImage(self.Rend.Img.resize(self.wh))
         self.canvas.itemconfig(self.image_on_canvas, image = self.image)
         self.Rendcount+=1
-        
+
         #Keep changing the angle until process is stopped
         if self.active:
             self.Root.after(4, self.RedoPic)
 
 #----------------------------------------------------------------------
 #----------------------------------------------------------------------
+
+
 def main():
 ## SET-UP
     
@@ -471,7 +501,8 @@ def main():
     p3=Point( 0.1, 4, 4,(255,0,0))
     p4=Point( -0.1, -0.1, 0,(100,100,100))
     #Create a Tetrahedron 
-    TH1=Tetra(p1,p2,p3,p4)
+    TH1=Tetra(p1,p2,p3,p4,Surf=[randcol(),randcol(),randcol(),randcol()])
+    #TH1=Tetra(p1,p2,p3,p4)
     
     #Create a Transformation Set
     TS1=Transform()
@@ -515,6 +546,12 @@ def main():
     #Add the lights
     rend.AddLightLum(L1)
     rend.AddLightLum(L2)
+    
+#    rend.ApplyTransf() #Apply the transformations
+#    rend.ApplyLight()  #Apply the lighting
+#    rend.Render()      #Render the image
+#    rend.ShowImg()
+    
     
     #----------------------------------------------------------------------
     

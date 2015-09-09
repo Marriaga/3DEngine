@@ -46,27 +46,38 @@ class MouseMove():
 RESOLUTION=(800,600)
 TARGFPS=60
 
-#Create 4 points: Point(x,y,z,(R,G,B))
-p1=Sh.Point(-2,-2, 4,(0,255,255))
-p2=Sh.Point( 4, 0.1, 4,(255,255,0))
-p3=Sh.Point( 0.1, 4, 4,(255,0,0))
-p4=Sh.Point( -0.1, -0.1, 0,(100,100,100))
-#Create a Tetrahedron 
-TH1=Sh.Tetra(p1,p2,p3,p4)
-    
-#Create a Transformation Set
-TS1=Tf.Transform()
-#Add several transformations to the set
-TS1.AddTransf(Tf.Rotation(130,3))
-TS1.AddTransf(Tf.Translation(2,2))
-TS1.AddTransf(Tf.Translation(1,3))
-TS1.AddTransf(Tf.Translation(1,1))
-#Create a new Tetrahedron by applying the
-#transformation set to the first tetrahedron
-TH2=TH1.ApplyTransf(TS1)
-    
 #Create Camera (very basic for now)
 cam=Sh.Camera()
+#Create Renderer Object: Renderer(Camera,Resolution)
+rend=Rd.Renderer(cam,RESOLUTION)
+
+if False:
+    #Create 4 points: Point(x,y,z,(R,G,B))
+    p1=Sh.Point(-2,-2, 4,(0,255,255))
+    p2=Sh.Point( 4, 0.1, 4,(255,255,0))
+    p3=Sh.Point( 0.1, 4, 4,(255,0,0))
+    p4=Sh.Point( -0.1, -0.1, 0,(100,100,100))
+    #Create a Tetrahedron 
+    TH1=Sh.Tetra(p1,p2,p3,p4)
+    #Create a Transformation Set
+    TS1=Tf.Transform()
+    #Add several transformations to the set
+    TS1.AddTransf(Tf.Rotation(130,3))
+    TS1.AddTransf(Tf.Translation(2,2))
+    TS1.AddTransf(Tf.Translation(1,3))
+    TS1.AddTransf(Tf.Translation(1,1))
+    #Create a new Tetrahedron by applying the
+    #transformation set to the first tetrahedron
+    TH2=TH1.ApplyTransf(TS1)
+    #Add the Tetrahedra to the Renderer
+    rend.AddObject(TH1)
+    rend.AddObject(TH2)
+else:
+    #Load a mesh
+    TH1=Sh.Mesh('boltmesh',(200,20,50))
+    #Add the Tetrahedra to the Renderer
+    rend.AddObject(TH1)
+    
     
 #Create a new transformation set and
 #add Rotation tranformations to the set
@@ -88,11 +99,6 @@ L2O=Sh.Point(0,-3,0)
 L2D=Sh.Vec(Sh.Point(0,1,2))
 L2=Sh.Light(L2O,L2D,0.3)
     
-#Create Renderer Object: Renderer(Camera,Resolution)
-rend=Rd.Renderer(cam,RESOLUTION)
-#Add the Tetrahedra to the Renderer
-rend.AddObject(TH1)
-rend.AddObject(TH2)
 #Add the transformation (rotaiton)
 rend.AddTransf(TS2)
 #Add the lights

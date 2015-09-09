@@ -42,6 +42,7 @@ def DrawTriangle(self, Cam, tuple Res, np.ndarray[double, ndim=2] Zmap, np.ndarr
     cdef double a, b, c
     cdef int ix,iy
     cdef int isin
+    cdef int hassurf
     cdef double z, z1, z2, z3
     cdef DTYPE_t col1,col2,col3
     cdef DTYPE_t icol
@@ -50,6 +51,7 @@ def DrawTriangle(self, Cam, tuple Res, np.ndarray[double, ndim=2] Zmap, np.ndarr
     cdef double B12dy,B20dy,B01dy
     
     p1,p2,p3=self.Ps
+    hassurf=self.hassurf
     z1=p1.z
     z2=p2.z
     z3=p3.z
@@ -57,6 +59,11 @@ def DrawTriangle(self, Cam, tuple Res, np.ndarray[double, ndim=2] Zmap, np.ndarr
     col2=p2.c
     col3=p3.c
     lum=self.lum
+    
+    if hassurf:
+       col1=self.Surf
+       col1=FF.setLum(col1,lum)
+
     #Resolution
     Nx,Ny=Res
     #size/pixel
@@ -97,7 +104,10 @@ def DrawTriangle(self, Cam, tuple Res, np.ndarray[double, ndim=2] Zmap, np.ndarr
                 z=a*z1+b*z2+c*z3
                 if Zmap[ix,iy]>=z:
                     Zmap[ix,iy]=z
-                    icol=FF.getcol(col1,col2,col3,a,b,c,lum)
+                    if hassurf:
+                       icol=col1
+                    else:
+                       icol=FF.getcol(col1,col2,col3,a,b,c,lum)
                     myarray[ix,iy]=icol
             a+=A12dx
             b+=A20dx

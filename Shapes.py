@@ -7,6 +7,7 @@ from __future__ import division
 import numpy as np
 import FastFunctions as FF
 import FastEngine as FE
+import impmesh
 
 class Light:
     def __init__(self,PO,VD,Int=0.1):
@@ -83,7 +84,16 @@ class BariConsts():
 class Triangle:
     def __init__(self,P1,P2,P3,Surf=None):
         self.Ps=P1,P2,P3
-        self.Surf=Surf
+        if Surf:
+           try:
+              r,g,b=Surf
+              self.Surf=FF.getICOL(r,g,b)
+           except:
+              self.Surf=Surf
+           self.hassurf=True
+        else:
+           self.Surf=None
+           self.hassurf=False
         self.BCts=BariConsts(self.Ps)
         self.Area=self.getArea()
         self.n=self.getn()
@@ -174,6 +184,45 @@ class Tetra:
     def ApplyTransf(self,Trsf):
         P1,P2,P3,P4=tuple(t.ApplyTransf(Trsf) for t in self.Ps)
         return Tetra(P1,P2,P3,P4,self.Surf)
+    
+    def AddLightLum(self,light):
+        for t in self.Ts:
+            t.AddLightLum(light)
+            
+    def InView(self,Cam):
+    #TODO: Make this less rudimentary
+        for t in self.Ts:
+            if t.InView(Cam):
+                return True
+        return False
+    
+    def draw(self,Cam,Res,Zmap,myarray):
+        for t in self.Ts:
+            if t.InView(Cam):
+                t.draw(Cam,Res,Zmap,myarray)
+
+class Mesh:
+    def __init__(self,fname=None,Surf=None):
+        self.Surf=Surf
+        if fname:
+           Pts,Ts=impmesh.getmesh(fname,Surf)
+        else:
+           Pts,Ts=[],[]
+        self.Ps=Pts
+        self.Ts=Ts
+        
+    def ApplyTransf(self,Trsf):
+        Tst=[t.ApplyTransf(Trsf) for t in self.Ts]
+        Pst=[]
+        for t in Tst:
+           for p in t.Ps:
+              if p not in Pst:
+                 Pst.append(p)
+        mobj=Mesh()
+        mobj.Ps=Pst
+        mobj.Ts=Tst
+        mobj.Surf=self.Surf
+        return mobj
     
     def AddLightLum(self,light):
         for t in self.Ts:

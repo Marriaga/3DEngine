@@ -5,4 +5,4 @@ Small Color Optimization- First 20 Renders in 400x300->800x600: 6.8
 Using int32 vs RGB (grayscale?)- First 20 Renders in 400x300->800x600: 3.0
 Major Overhaul (Pygame+Cython) - First 20 Renders in 400x300->800x600: 0.45
                                - 100Rends/800x600: 13s
-
+Added Mesh import
